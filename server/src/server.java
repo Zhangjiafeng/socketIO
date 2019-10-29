@@ -117,29 +117,78 @@ public class server implements Runnable {
         DataInputStream dis = null;
         FileOutputStream fos = null;
         StringBuffer sb=new StringBuffer();
+        String str="";
         try {
             try {
                 dis = new DataInputStream(socket.getInputStream());
                 byte[] input = new byte[1];
-                String str="";
+
                 InetAddress addr=InetAddress.getLocalHost();
                 String ip=addr.getHostAddress();
+                byte[] ips=new byte[ip.length()];
+                dis.read(ips,0,ip.length());
+                String s=new String(ips);
+                System.out.println("ip "+s+" "+ip);
+                if(s.equals(ip)){
+                    str+=new String(ips);
+                    while(dis.read(input,0,1)>0){
+                        str+=new String(input);
+                    }
+                    System.out.println(str);
+                    String[] arr=str.split("[?]");
+                    Socket sk=new Socket();
+                    sk.connect(new InetSocketAddress(arr[0], Integer.parseInt(arr[1])));
+                    OutputStream os=sk.getOutputStream();
 
-                while(dis.read(input,0,1)>0){
-                    str+=new String(input);
-                    if(new String(input)=="?"){
-                        //TODO
+                    os.write(ip.getBytes());
+                    os.write("?".getBytes());
+                    os.write(String.valueOf(PORT).getBytes());
+                    System.out.println("正在去连接客户端...");
+                }else{
+                    System.out.println("客户端连接成功");
+                    try {
+                        try {
+                            dis = new DataInputStream(socket.getInputStream());
+                            String name="";
+                            if(str.indexOf("?")!=-1){
+                               name=str.substring(0,str.indexOf("?"));
+                            }else{
+                                name=str;
+                                while(dis.read(input,0,1)>0){
+                                    System.out.println(new String(input));
+                                    if(new String(input).equals("?"))
+                                        break;
+                                    name+=new String(input);
+                                }
+                                System.out.println("name="+name);
+                                fos = new FileOutputStream(new File("D:\\test\\1.txt"));
+                                inputByte = new byte[1024];
+                                System.out.println("开始接收数据...");
+                                int total=0;
+                                while ((length = dis.read(inputByte, 0, inputByte.length)) > 0) {
+                                    text.setText(total+"byte");
+                                    total+=length;
+                                    System.out.println(length);
+                                    fos.write(inputByte, 0, length);
+                                    fos.flush();
+                                }
+                                System.out.println("完成接收");
+                            }
+
+
+                        } finally {
+                            if (fos != null)
+                                fos.close();
+                            if (dis != null)
+                                dis.close();
+                            if (socket != null)
+                                socket.close();
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e);
                     }
                 }
-                System.out.println(str);
-                String[] arr=str.split("[,]");
-                Socket sk=new Socket();
-                sk.connect(new InetSocketAddress(arr[0], Integer.parseInt(arr[1])));
-                OutputStream os=sk.getOutputStream();
 
-                os.write(ip.getBytes());
-                os.write("?".getBytes());
-                os.write(String.valueOf(PORT).getBytes());
 
             } finally {
                 if (fos != null)

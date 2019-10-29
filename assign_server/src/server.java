@@ -96,11 +96,11 @@ public class server implements Runnable {
                 if(!file.exists()){
                     file.createNewFile();
                 }
-                //fos = new FileOutputStream(new File("D:\\recordLog.txt"),true);
+                fos = new FileOutputStream(new File("D:\\recordLog.txt"),true);
                 inputByte = new byte[1];
                 String str="";
                 while ((length = dis.read(inputByte, 0, inputByte.length)) > 0) {
-                  //  fos.write(inputByte, 0, length);
+                    fos.write(inputByte, 0, length);
                     str=str+new String(inputByte);
                 }
                 String s=str.replaceAll("[?]"," ");
@@ -111,7 +111,6 @@ public class server implements Runnable {
                 out.append(s+"\r\n",0,s.length()+2);
                 out.close();
                 String[] arr=str.split("[?]");
-//                System.out.println(arr[1]);
                 System.out.println("完成日志写入");
                 System.out.println("正在分配服务器");
                 Socket sk=new Socket();

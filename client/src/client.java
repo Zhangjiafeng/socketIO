@@ -11,6 +11,8 @@ import java.util.Date;
 public class client {
     private static final int PORT=9001;
     private static final int ASSIGN_PORT=9004;
+    public static File transFile=null;
+    public static String IP="";
     public static void createAndShowGUI() throws UnknownHostException {
         JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame=new JFrame("文件传输");
@@ -40,6 +42,7 @@ public class client {
         frame.add(panel3, BorderLayout.SOUTH);
         InetAddress addr=InetAddress.getLocalHost();
         ipText.setText(addr.getHostAddress());
+        IP=addr.getHostAddress();
         frame.pack();
         frame.setVisible(true);
         filechooser.addActionListener(new ActionListener() {
@@ -56,6 +59,7 @@ public class client {
                 Socket socket = null;
                 try {
                     File file = new File(filechooser.getSelectedFile().getPath());
+                    transFile=file;
                     System.out.println(file.length());
                     size.setText(file.length()/1024+"KB");
                     if(file.exists() && file.isFile()) {
@@ -78,27 +82,8 @@ public class client {
                         out.write("?".getBytes());
                         out.write(String.valueOf(file.length()).getBytes());
                         System.out.println("请等待分配文件服务器...");
-                        ServerSocket server=new ServerSocket(PORT);
-                        Socket sk=server.accept();
-                        System.out.println("服务器分配完成...");
-                        DataInputStream dis = null;
-                        FileOutputStream fos = null;
-                        dis=new DataInputStream(sk.getInputStream());
-                        byte[] input=new byte[1];
-                        String str="";
-                        while(dis.read(input,0,1)>0){
-                            str+=new String(input);
-                        }
-                        System.out.println(str);
-                        String[] arr=str.split("[?]");
-                        sk.connect(new InetSocketAddress(arr[0],Integer.parseInt(arr[1])));
-                        OutputStream os=sk.getOutputStream();
-                        byte[] datas = new byte[1024];
-                        int i = 0;
-                        while((i = in.read(data)) != -1) {
-                            os.write(data, 0, i);
-                        }
-                        System.out.println("传输文件完成");
+//                        Thread th=new Thread();
+//                        System.out.println("传输文件完成");
                     }else {
                         System.out.println("文件不存在或者一个文件~~");
                     }
@@ -128,7 +113,91 @@ public class client {
         });
     }
 
+    public static void TransForm(Socket socket){
+        InputStream in = null;
+        try {
+            if(transFile.exists() && transFile.isFile()) {
+                in = new FileInputStream(transFile);
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(IP, 9005));
+                OutputStream out = socket.getOutputStream();
+                out.write(transFile.getName().getBytes());
+                out.write("?".getBytes());
+                System.out.println(transFile.getName());
+                int fileLength=0;
+                byte[] data = new byte[1024];
+                int i = 0;
+                while((i = in.read(data)) != -1) {
+                    fileLength+=data.length;
+                    out.write(data, 0, i);
+                }
+                System.out.println("传输文件呢");
+            }else {
+                System.out.println("文件不存在或者一个文件~~");
+            }
+        } catch (Exception exp) {
+            System.out.println(exp);
+        }finally {
+            try {
+                in.close();
+            } catch (IOException exp) {
+                exp.printStackTrace();
+            }finally {
+                // 强制将输入流置为空
+                in = null;
+            }
+            try {
+                socket.close();
+            } catch (IOException exp) {
+                exp.printStackTrace();
+            }finally {
+                // 强制释放socket
+                socket = null;
+            }
+
+        }
+//        System.out.println("文件传输结束");
+    }
+
+
     public static void main(String[] args) throws IOException {
         createAndShowGUI();
+        final ServerSocket server=new ServerSocket(9001);
+        Thread th=new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true){
+                    try{
+                        System.out.println("监听事件启动...");
+                        Socket sk=server.accept();
+                        System.out.println("服务器分配完毕");
+                        TransForm(sk);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        th.start();
+//        ServerSocket server=new ServerSocket(PORT);
+//        Socket sk=server.accept();
+//        System.out.println("服务器分配完成...");
+//        DataInputStream dis = null;
+//        FileOutputStream fos = null;
+//        dis=new DataInputStream(sk.getInputStream());
+//        byte[] input=new byte[1];
+//        String str="";
+//        while(dis.read(input,0,1)>0){
+//            str+=new String(input);
+//        }
+//        System.out.println(str);
+//        String[] arr=str.split("[?]");
+//        sk.connect(new InetSocketAddress(arr[0],Integer.parseInt(arr[1])));
+//        OutputStream os=sk.getOutputStream();
+//        byte[] datas = new byte[1024];
+//        int i = 0;
+//        while((i = in.read(data)) != -1) {
+//            os.write(data, 0, i);
+//        }
     }
 }
