@@ -78,14 +78,27 @@ public class client {
                         out.write("?".getBytes());
                         out.write(String.valueOf(file.length()).getBytes());
                         System.out.println("请等待分配文件服务器...");
-//                        int fileLength=0;
-//                        byte[] data = new byte[1024];
-//                        int i = 0;
-//                        while((i = in.read(data)) != -1) {
-//                            fileLength+=data.length;
-//
-//                            out.write(data, 0, i);
-//                        }
+                        ServerSocket server=new ServerSocket(PORT);
+                        Socket sk=server.accept();
+                        System.out.println("服务器分配完成...");
+                        DataInputStream dis = null;
+                        FileOutputStream fos = null;
+                        dis=new DataInputStream(sk.getInputStream());
+                        byte[] input=new byte[1];
+                        String str="";
+                        while(dis.read(input,0,1)>0){
+                            str+=new String(input);
+                        }
+                        System.out.println(str);
+                        String[] arr=str.split("[?]");
+                        sk.connect(new InetSocketAddress(arr[0],Integer.parseInt(arr[1])));
+                        OutputStream os=sk.getOutputStream();
+                        byte[] datas = new byte[1024];
+                        int i = 0;
+                        while((i = in.read(data)) != -1) {
+                            os.write(data, 0, i);
+                        }
+                        System.out.println("传输文件完成");
                     }else {
                         System.out.println("文件不存在或者一个文件~~");
                     }

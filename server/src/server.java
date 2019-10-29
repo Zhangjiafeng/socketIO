@@ -8,8 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.*;
-import java.nio.file.Path;
-import java.util.InputMismatchException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 
@@ -17,8 +15,7 @@ public class server implements Runnable {
     public JTextField text=new JTextField(15);
     public JButton btn;
     public boolean suspend=false;
-    public static int flag=0;
-    public static int[] PORTS={9005,9006,9007};
+    public static int PORT=9005;
     public synchronized void toSuspend(){
         suspend=true;
     }
@@ -54,23 +51,57 @@ public class server implements Runnable {
     public static void main(String[] args) throws UnknownHostException {
 
         try {
-            final ServerSocket server = new ServerSocket(9004);
+            final ServerSocket server = new ServerSocket(PORT);
             server s=new server();
-            Thread th = new Thread(new Runnable() {
+            s.createServerGUI();
+            final Thread[] th = {new Thread(new Runnable() {
                 public void run() {
+
                     while (true) {
                         try {
-                            System.out.println("开始监听客户端的请求...");
+                            s.btn.setEnabled(false);
+                            System.out.println("开始监听分配服务器的请求...");
                             Socket socket = server.accept();
-                            System.out.println("有客户端连接...");
-                            s.AssignServer(socket);
+                            System.out.println("有任务分配过来...");
+//                            s.btn.setEnabled(true);
+                            s.receiveFile(socket);
                         } catch (Exception e) {
                             System.out.println(e);
                         }
                     }
                 }
+            })};
+            s.btn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+                    try{
+                        s.btn.setEnabled(false);
+                        th[0].stop();
+                    }catch(Exception e){
+                        System.out.println(e);
+                    }finally {
+                        th[0] =new Thread(new Runnable() {
+                            public void run() {
+                                while (true) {
+                                    try {
+                                        s.btn.setEnabled(false);
+                                        System.out.println("开始监听分配服务器的请求...");
+                                        Socket socket = server.accept();
+                                        System.out.println("有任务分配过来...");
+//                                        s.btn.setEnabled(true);
+                                        s.receiveFile(socket);
+                                    } catch (Exception e) {
+                                        System.out.println(e);
+                                    }
+                                }
+                            }
+                        });
+                        th[0].start();
+                    }
+
+                }
             });
-            th.start(); //启动线程运行
+            th[0].start(); //启动线程运行
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -80,7 +111,7 @@ public class server implements Runnable {
 
     }
 
-    public void AssignServer(Socket socket) {
+    public void receiveFile(Socket socket) {
         byte[] inputByte = null;
         int length = 0;
         DataInputStream dis = null;
@@ -90,45 +121,29 @@ public class server implements Runnable {
             try {
                 dis = new DataInputStream(socket.getInputStream());
                 byte[] input = new byte[1];
-                String name="";
-                String path="D:\\recordLog.txt";
-                File file=new File(path);
-                if(!file.exists()){
-                    file.createNewFile();
-                }
-                //fos = new FileOutputStream(new File("D:\\recordLog.txt"),true);
-                inputByte = new byte[1];
                 String str="";
-                while ((length = dis.read(inputByte, 0, inputByte.length)) > 0) {
-                  //  fos.write(inputByte, 0, length);
-                    str=str+new String(inputByte);
+                InetAddress addr=InetAddress.getLocalHost();
+                String ip=addr.getHostAddress();
+
+                while(dis.read(input,0,1)>0){
+                    str+=new String(input);
+                    if(new String(input)=="?"){
+                        //TODO
+                    }
                 }
-                String s=str.replaceAll("[?]"," ");
-                System.out.println(s);
-                FileWriter fw=null;
-                fw=new FileWriter(file,true);
-                BufferedWriter out=new BufferedWriter(fw);
-                out.append(s+"\r\n",0,s.length()+2);
-                out.close();
-                String[] arr=str.split("[?]");
-//                System.out.println(arr[1]);
-                System.out.println("完成日志写入");
-                System.out.println("正在分配服务器");
+                System.out.println(str);
+                String[] arr=str.split("[,]");
                 Socket sk=new Socket();
-                sk.connect(new InetSocketAddress(arr[1], 9005));
-                if(flag>=2){
-                    flag=0;
-                }else{
-                    flag+=1;
-                }
-                System.out.println("当前分配服务器端口为"+PORTS[flag]);
-                OutputStream outStream=sk.getOutputStream();
-                outStream.write(arr[1].getBytes());
-                outStream.write("?".getBytes());
-                outStream.write(arr[2].getBytes());
-                sk.close();
-                outStream.close();
+                sk.connect(new InetSocketAddress(arr[0], Integer.parseInt(arr[1])));
+                OutputStream os=sk.getOutputStream();
+
+                os.write(ip.getBytes());
+                os.write("?".getBytes());
+                os.write(String.valueOf(PORT).getBytes());
+
             } finally {
+                if (fos != null)
+                    fos.close();
                 if (dis != null)
                     dis.close();
                 if (socket != null)
