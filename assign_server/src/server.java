@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
+import java.math.BigInteger;
 import java.net.*;
 import java.nio.file.Path;
 import java.util.InputMismatchException;
@@ -19,6 +20,7 @@ public class server implements Runnable {
     public boolean suspend=false;
     public static int flag=0;
     public static int[] PORTS={9005,9006,9007};
+    public static float[] data={0,0,0};
     public synchronized void toSuspend(){
         suspend=true;
     }
@@ -28,7 +30,7 @@ public class server implements Runnable {
     }
     public void createServerGUI() throws UnknownHostException{
         JFrame.setDefaultLookAndFeelDecorated(true);
-        JFrame frame=new JFrame("文件传输");
+        JFrame frame=new JFrame("中转服务器");
         frame.setSize(400,300);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel panel=new JPanel();
@@ -80,6 +82,8 @@ public class server implements Runnable {
 
     }
 
+
+
     public void AssignServer(Socket socket) {
         byte[] inputByte = null;
         int length = 0;
@@ -100,7 +104,7 @@ public class server implements Runnable {
                 inputByte = new byte[1];
                 String str="";
                 while ((length = dis.read(inputByte, 0, inputByte.length)) > 0) {
-                    fos.write(inputByte, 0, length);
+                   // fos.write(inputByte, 0, length);
                     str=str+new String(inputByte);
                 }
                 String s=str.replaceAll("[?]"," ");
@@ -114,14 +118,23 @@ public class server implements Runnable {
                 System.out.println("完成日志写入");
                 System.out.println("正在分配服务器");
                 Socket sk=new Socket();
-                sk.connect(new InetSocketAddress(arr[1], 9005));
-                if(flag>=2){
-                    flag=0;
-                }else{
-                    flag+=1;
+                float fileLength=Integer.parseInt(arr[arr.length-1]);
+                float min=data[0];
+                int minIndex=0;
+                for(int x=1;x<3;x++){
+                    if(data[x]<min){
+                        minIndex=x;
+                        min=data[x];
+                    }
                 }
+                flag=minIndex;
+                data[minIndex]+=fileLength;
+                sk.connect(new InetSocketAddress(arr[1], PORTS[flag]));
+
                 System.out.println("当前分配服务器端口为"+PORTS[flag]);
+                System.out.println("此端口已传输："+data[flag]);
                 OutputStream outStream=sk.getOutputStream();
+                outStream.write("server".getBytes());
                 outStream.write(arr[1].getBytes());
                 outStream.write("?".getBytes());
                 outStream.write(arr[2].getBytes());
