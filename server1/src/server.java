@@ -15,7 +15,7 @@ public class server implements Runnable {
     public static JTextField text=new JTextField(15);
     public JButton btn;
     public boolean suspend=false;
-    public static int PORT=9007;
+    public static int PORT=9006;
     public static JTextField ipText;
     public synchronized void toSuspend(){
         suspend=true;

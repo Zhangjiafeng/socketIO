@@ -183,7 +183,7 @@ public class client {
 
     public static void main(String[] args) throws IOException {
         createAndShowGUI();
-        final ServerSocket server=new ServerSocket(9001);
+        final ServerSocket server=new ServerSocket(9003);
         Thread th=new Thread(new Runnable() {
             @Override
             public void run() {

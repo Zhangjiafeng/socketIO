@@ -132,6 +132,7 @@ public class client {
         dis.close();
         try {
             if(transFile.exists() && transFile.isFile()) {
+                System.out.println("正在传输文件...");
                 in = new FileInputStream(transFile);
                 System.out.println(socket.getRemoteSocketAddress());
                 socket = new Socket();
@@ -149,7 +150,7 @@ public class client {
                     fileLength+=data.length;
                     out.write(data, 0, i);
                 }
-                System.out.println("正在传输文件...");
+                System.out.println("传输文件完成...");
                 in.close();
                 socket.close();
             }else {
